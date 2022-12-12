@@ -74,6 +74,7 @@ func ConsistentQueryShopByStream(ctx context.Context, ddb *dynamodb.Client, stre
 		return nil, fmt.Errorf("Unable to create expression for query [%v]", err)
 	}
 
+	consistentRead := true
 	input := dynamodb.QueryInput {
 		TableName: Shops.TableName,
 		IndexName: &ShopsGsiStream,
@@ -81,6 +82,7 @@ func ConsistentQueryShopByStream(ctx context.Context, ddb *dynamodb.Client, stre
 		ExpressionAttributeNames: expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression: expr.KeyCondition(),
+		ConsistentRead: &consistentRead,
 	}
 
 	output, err := ddb.Query(ctx, &input)
