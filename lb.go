@@ -97,13 +97,28 @@ func Register(shopId string, stream string, port uint16) (string, string, int, e
 }
 
 func Unregister(stream string) (int, error) {
-	// context, err := tables.Context()
-	// if err != nil {
-	// 	return 500, err
-	// }
+	context, err := tables.Context()
+	if err != nil {
+		return 500, err
+	}
 
-	// ctx := context.Ctx()
-	// cfg := context.Cfg()
-	// ddb := dynamodb.NewFromConfig(*cfg)
-	return 500, fmt.Errorf("Not Implemented")
+	ctx := context.Ctx()
+	cfg := context.Cfg()
+	ddb := dynamodb.NewFromConfig(*cfg)
+	shop, err := tables.QueryShopByStream(ctx, ddb, stream)
+	if err != nil {
+		return 500, err
+	}
+
+	instanceRecord, err := tables.ConsistentGetInstance(ctx, ddb, shop.Instance)
+	if err != nil {
+		return 500, err
+	}
+
+	err = tables.TransactDelete(ctx, ddb, shop, instanceRecord)
+	if err != nil {
+		return 500, err
+	}
+
+	return 200, nil
 }

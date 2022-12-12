@@ -64,3 +64,7 @@ func QueryInstancesUsingPort(ctx context.Context, ddb *dynamodb.Client, port uin
 
 	return &records, nil
 }
+
+func QueryShopByStream(ctx context.Context, ddb *dynamodb.Client, stream string) (*ShopType, error) {
+	return nil, fmt.Errorf("Not Implemented")
+}
