@@ -19,7 +19,6 @@ func Register(shopId string, stream string, port uint16) (string, string, int, e
 	ctx := context.Ctx()
 	cfg := context.Cfg()
 	ddb := dynamodb.NewFromConfig(*cfg)
-	var num uint8
 	shopIdExists, err := tables.TestShopIdPresence(ctx, ddb, shopId)
 	if err != nil {
 		return "", "", 500, err
@@ -61,7 +60,8 @@ func Register(shopId string, stream string, port uint16) (string, string, int, e
 
 	var streams uint8 = 0
 	for streams = 0; streams < MAX_INSTANCES; streams++ {
-		instanceNameRecords, err := tables.QueryAllInstancesWithNumStreams(ctx, ddb, num)
+		instanceNameRecords, er := tables.QueryAllInstancesWithNumStreams(ctx, ddb, streams)
+		err = er
 		if err == nil && instanceNameRecords != nil {
 			for _, record := range *instanceNameRecords {
 				if _, present := instancesSetUsingPort[record.Instance]; !present {
@@ -85,8 +85,12 @@ func Register(shopId string, stream string, port uint16) (string, string, int, e
 		// Preferred less code nesting over meticulous error logging. The code can be changed to get more
 		// precise error logging, if this code ever encounters issues needing deeper troubleshooting.
 		if err != nil {
-			log.Printf("INFO: Error encountered num=%d shopId=%v stream=%v port=%d \n instance name records: %v \n instancesSetUsingPort %v --> %v", num, shopId, stream, port, *instanceNameRecords, instancesSetUsingPort, err)
+			log.Printf("INFO: Error encountered streams=%d shopId=%v stream=%v port=%d \n instance name records: %v \n instancesSetUsingPort %v --> %v", streams, shopId, stream, port, *instanceNameRecords, instancesSetUsingPort, err)
 		}
+	}
+
+	if err != nil {
+		return "", "", 500, err
 	}
 
 	return "", "", 503, fmt.Errorf(fmt.Sprintf("Unable to allocate for %v, %v and %d", shopId, stream, port))

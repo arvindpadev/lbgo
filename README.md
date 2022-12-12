@@ -38,6 +38,8 @@ How to run the tests:
 ```
 java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -inMemory -port 22000
 ```
+  (NOTE: This will need to be stopped with CTRL+C and started again, each time the tests are run)
+
 2. In another terminal navigate to the root directory of the repo and run
 ```
 go test
