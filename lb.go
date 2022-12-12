@@ -105,7 +105,7 @@ func Unregister(stream string) (int, error) {
 	ctx := context.Ctx()
 	cfg := context.Cfg()
 	ddb := dynamodb.NewFromConfig(*cfg)
-	shop, err := tables.QueryShopByStream(ctx, ddb, stream)
+	shop, err := tables.ConsistentQueryShopByStream(ctx, ddb, stream)
 	if err != nil {
 		return 500, err
 	}
