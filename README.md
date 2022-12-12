@@ -44,5 +44,7 @@ java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -inMemory -p
 ```
 go test
 ```
+  (NOTE: The tests are not well written meaning, they are not independent of
+  each other. They have to be run in order)
 
 NOTE: Only the Register function has been implemented.
