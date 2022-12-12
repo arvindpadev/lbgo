@@ -22,10 +22,17 @@ func TestRegister(t *testing.T) {
 }
 
 func TestUnregister(t *testing.T) {
-	status, err := Unregister("stream0")
+	_, _, status, err := Register("shopU", "streamU", 7000)
+	if err != nil {
+		t.Fatalf(fmt.Sprintf("Register of shopU, streamU, 7000 should have succeeded: [%v]", err))
+	}
+
+	status, err = Unregister("streamU")
 	if err != nil {
 		t.Fatalf(fmt.Sprintf("Unregister Error: %d [%v]", status, err))
 	}
+
+	fmt.Println(fmt.Sprintf("SUCCESS: TestUnregister (%d)", status))
 }
 
 func TestRegisterRepeatingShop(t* testing.T) {

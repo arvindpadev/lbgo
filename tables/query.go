@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 func QueryAllInstancesWithNumStreams(ctx context.Context, ddb *dynamodb.Client, num uint8) (*[]InstanceNameType, error) {
@@ -67,41 +66,42 @@ func QueryInstancesUsingPort(ctx context.Context, ddb *dynamodb.Client, port uin
 	return &records, nil
 }
 
-func ConsistentQueryShopByStream(ctx context.Context, ddb *dynamodb.Client, stream string) (*ShopType, error) {
+func QueryShopIdByStream(ctx context.Context, ddb *dynamodb.Client, stream string) (string, error) {
 	kexpr := expression.Key(*Shops.Stream.AttributeName).Equal(expression.Value(stream))
 	expr, err := expression.NewBuilder().WithKeyCondition(kexpr).Build()
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create expression for query [%v]", err)
+		return "", fmt.Errorf("Unable to create expression for query [%v]", err)
 	}
 
-	consistentRead := true
 	input := dynamodb.QueryInput {
 		TableName: Shops.TableName,
 		IndexName: &ShopsGsiStream,
-		Select: types.SelectAllAttributes,
+		ProjectionExpression: Shops.ShopId.AttributeName,
 		ExpressionAttributeNames: expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression: expr.KeyCondition(),
-		ConsistentRead: &consistentRead,
 	}
 
 	output, err := ddb.Query(ctx, &input)
 	if err != nil {
-		return nil, fmt.Errorf("Could not query Shops table with stream %v [%v]", stream, err)
+		return "", fmt.Errorf("Could not query Shops table with stream %v [%v]", stream, err)
 	}
 
 	if len(output.Items) == 0 {
-		return nil, fmt.Errorf("No shop record found for stream %s", stream)
+		return "", nil
 	} else if len(output.Items) > 1 {
 		// don't panic, since we aren't adding to our data corruption problem here
+		// since we are on the deletion path
 		log.Println(fmt.Sprintf("ERROR: More than one shop for stream %s was detected"))
 	}
 
-	var records []ShopType
+	var records []struct {
+		ShopId string
+	}
 	err = attributevalue.UnmarshalListOfMaps(output.Items, &records)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return &records[0], nil
+	return records[0].ShopId, nil
 }

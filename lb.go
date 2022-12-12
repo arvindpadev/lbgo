@@ -105,9 +105,22 @@ func Unregister(stream string) (int, error) {
 	ctx := context.Ctx()
 	cfg := context.Cfg()
 	ddb := dynamodb.NewFromConfig(*cfg)
-	shop, err := tables.ConsistentQueryShopByStream(ctx, ddb, stream)
+	shopId, err := tables.QueryShopIdByStream(ctx, ddb, stream)
 	if err != nil {
 		return 500, err
+	}
+
+	if shopId == "" {
+		return 400, fmt.Errorf("Stream %s does not exist", stream)
+	}
+
+	shop, err := tables.ConsistentGetShop(ctx, ddb, shopId)
+	if err != nil {
+		return 500, err
+	}
+
+	if shop.Stream != stream {
+		return 500, fmt.Errorf("That stream may not have been consistently written yet")
 	}
 
 	instanceRecord, err := tables.ConsistentGetInstance(ctx, ddb, shop.Instance)

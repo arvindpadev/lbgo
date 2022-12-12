@@ -79,7 +79,6 @@ func ConsistentGetInstance(ctx context.Context, ddb *dynamodb.Client, instance s
 
 	instanceKeyMatchMap, err := attributevalue.MarshalMap(instanceKeyMatch)
 	if err != nil {
-		// true so that we error out even if the err is not considered
 		return nil, err
 	}
 
@@ -109,6 +108,46 @@ func ConsistentGetInstance(ctx context.Context, ddb *dynamodb.Client, instance s
 	}
 
 	return &instanceRecord, nil
+}
+
+
+
+func ConsistentGetShop(ctx context.Context, ddb *dynamodb.Client, shopId string) (*ShopType, error) {
+	shopIdKeyMatch := struct {
+		ShopId string
+	}{
+		ShopId: shopId,
+	}
+
+	shopIdKeyMatchMap, err := attributevalue.MarshalMap(shopIdKeyMatch)
+	if err != nil {
+		return nil, err
+	}
+
+	consistentRead := true
+	input := dynamodb.GetItemInput {
+		TableName: Shops.TableName,
+		Key: shopIdKeyMatchMap,
+		ConsistentRead: &consistentRead,
+	}
+
+	output, err := ddb.GetItem(ctx, &input)
+	if err != nil {
+		log.Println(fmt.Sprintf("INFO: Error getting shop %v: [%v]", shopId, err))
+		return nil, err
+	}
+
+	if len(output.Item) == 0 {
+		return nil, fmt.Errorf("ShopId %v is absent", shopId)
+	}
+
+	var shop ShopType
+	err = attributevalue.UnmarshalMap(output.Item, &shop)
+	if err != nil {
+		return nil, err
+	}
+
+	return &shop, nil
 }
 
 func GetIps(ctx context.Context, ddb *dynamodb.Client, instance string) (string, string, error) {
