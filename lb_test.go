@@ -3,6 +3,7 @@ package lb
 import (
 	"context"
  	"fmt"
+	"strings"
  	"testing"
  	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
@@ -98,6 +99,49 @@ func TestRegisterInstanceExhaustion(t* testing.T) {
 	}
 
 	fmt.Println(fmt.Sprintf("SUCCESS: TestRegisterInstanceExhaustion Expected error received (%d) --> %v", status, err))
+}
+
+func TestParallelUnregister(t* testing.T) {
+	var streamSeed uint16 = 10
+	channel := make(chan string, 6)
+	var i uint16
+	errors := []string{}
+
+	fi := func(st uint16, fin uint16, ch chan<-string) {
+		for i = st; i < fin; i++ {
+			s := fmt.Sprintf("stream%d", streamSeed + i)
+			go func(stream string) {
+				status, err := Unregister(stream)
+				if err != nil {
+					ch <- fmt.Sprintf("Should have been able to unregister %s: [%d] [%v]", stream, status, err)
+				} else {
+					ch <- ""
+				}
+			}(s)
+		}
+	}
+
+	fe := func(st uint16, fin uint16, ch <-chan string) {
+		for i = st; i < fin; i++ {
+			er := <-ch
+			if len(er) > 0 {
+				errors = append(errors, er)
+			}
+		}
+    }
+
+	// At more than 3 parallel unregisters, the transaction
+	// fails with a conditional check exception presumably
+	// because the version check failed.
+	fi(0, 3, channel)
+	fe(0, 3, channel)
+	fi(3, 6, channel)
+	fe(3, 6, channel)
+	if len(errors) > 0 {
+		t.Fatalf(strings.Join(errors, "\n"))
+	}
+
+	fmt.Println("SUCCESS: TestParallelUnregister")
 }
 
 func TestMain(m *testing.M) {
