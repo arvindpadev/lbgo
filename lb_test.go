@@ -103,7 +103,7 @@ func TestRegisterInstanceExhaustion(t* testing.T) {
 
 func TestParallelUnregister(t* testing.T) {
 	var streamSeed uint16 = 10
-	channel := make(chan string, 6)
+	channel := make(chan string, 3)
 	var i uint16
 	errors := []string{}
 
