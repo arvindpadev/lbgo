@@ -19,12 +19,21 @@ func Register(shopId string, stream string, port uint16) (string, string, int, e
 	ctx := context.Ctx()
 	cfg := context.Cfg()
 	ddb := dynamodb.NewFromConfig(*cfg)
-	shopIdExists, err := tables.TestShopIdPresence(ctx, ddb, shopId)
+
+	shop, err := tables.ConsistentGetShop(ctx, ddb, shopId)
 	if err != nil {
 		return "", "", 500, err
 	}
 
-	if shopIdExists {
+	if shop != nil && shop.Stream == stream && shop.Port == port {
+		pubIp, privIp, err := tables.GetIps(ctx, ddb, shop.Instance)
+		if err != nil {
+			return "", "", 500, err
+		}
+
+		return pubIp, privIp, 200, nil
+
+	} else if shop != nil {
 		return "", "",  400, fmt.Errorf(fmt.Sprintf("Shop %v in use", shopId))
 	}
 
@@ -117,6 +126,19 @@ func Unregister(stream string) (int, error) {
 	shop, err := tables.ConsistentGetShop(ctx, ddb, shopId)
 	if err != nil {
 		return 500, err
+	}
+
+	if shop == nil {
+		streamExists, err := tables.TestStreamPresence(ctx, ddb, stream)
+		if err != nil {
+			return 500, err
+		}
+
+		if streamExists {
+			return 500, fmt.Errorf(fmt.Sprintf("Another stream %v may have been allocated. If this is untrue, please issue the request again.", stream))
+		} else {
+			return 200, nil
+		}
 	}
 
 	if shop.Stream != stream {

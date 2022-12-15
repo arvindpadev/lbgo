@@ -138,7 +138,7 @@ func ConsistentGetShop(ctx context.Context, ddb *dynamodb.Client, shopId string)
 	}
 
 	if len(output.Item) == 0 {
-		return nil, fmt.Errorf("ShopId %v is absent", shopId)
+		return nil, nil
 	}
 
 	var shop ShopType

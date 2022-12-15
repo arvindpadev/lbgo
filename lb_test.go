@@ -36,13 +36,22 @@ func TestUnregister(t *testing.T) {
 	fmt.Println(fmt.Sprintf("SUCCESS: TestUnregister (%d)", status))
 }
 
-func TestRegisterRepeatingShop(t* testing.T) {
+func TestRegisterWithExactSameData(t *testing.T) {
+	publicIp, privateIp, status, err := Register("shop0", "stream0", 11000)
+	if err != nil {
+		t.Fatalf(fmt.Sprintf("Register Error: [%v]", err))
+	}
+
+	fmt.Println(fmt.Sprintf("SUCCESS: TestRegister IP addresses (%d) --> %v %v", status, publicIp, privateIp))
+}
+
+func TestRegisterRepeatingShopWithDifferentData(t* testing.T) {
 	_, _, status, err := Register("shop0", "stream1", 11001)
 	if err == nil {
 		t.Fatalf("No error was received")
 	}
 
-	fmt.Println(fmt.Sprintf("SUCCESS: TestRegisterRepeatingShop Expected error received (%d) --> %v", status, err))
+	fmt.Println(fmt.Sprintf("SUCCESS: TestRegisterRepeatingShopWithDifferentData Expected error received (%d) --> %v", status, err))
 }
 
 func TestRegisterRepeatingStream(t* testing.T) {
